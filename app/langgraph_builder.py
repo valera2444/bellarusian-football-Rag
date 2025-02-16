@@ -144,7 +144,6 @@ def build_dense_retriver(documents, k = 7, refresh = False):
         documents (_type_): list of docs
         k (int, optional): number of docs to be retrived. Defaults to 7.
         refresh (bool, optional): Whether to update vectore store. Takes long time. Defaults to False.
-        storage_path(str): storage path of dense embeddings
 
     Returns:
         _type_: dense retriever
@@ -177,7 +176,7 @@ def build_dense_retriver(documents, k = 7, refresh = False):
     ids = [doc.id for doc in documents]
 
     if refresh:
-        vector_store.add_documents(documents=documents[:50], ids=ids[:50]) #CPU - >1.5 hours, GPU - 15min
+        vector_store.add_documents(documents=documents[:5000], ids=ids[:5000]) #CPU - >1.5 hours, GPU - 15min
         #vector_store.add_documents(documents=[Document("Hello world")]*3, ids=uuids[:3]) #CPU - >1.5 hours, GPU - 15min
         
     dense_retriver = vector_store.as_retriever(search_kwargs={"k": k})

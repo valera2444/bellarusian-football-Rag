@@ -3,9 +3,6 @@ from contextlib import asynccontextmanager
 
 from langgraph_builder import compile_graph, init_langsmith
 
-from dotenv import load_dotenv
-load_dotenv() 
-
 import os
 
 from update_vector_db import update as update_vdb
@@ -13,7 +10,7 @@ from update_vector_db import update as update_vdb
 # Global variable to store the compiled graph
 GRAPH = None 
 
-API_KEY = os.environ["LANGCHAIN_API_KEY"]
+API_KEY = None if os.environ['LANGCHAIN_API_KEY'] == '' else os.environ['LANGCHAIN_API_KEY'] 
 
 DATA_PATH = '/data/cleaned.txt'
 
