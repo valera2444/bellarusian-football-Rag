@@ -9,8 +9,7 @@ from langgraph_builder import compile_graph, init_langsmith
 GRAPH = None 
 
 DENSE_VECTOR_STORAGE_PATH = './chroma_langchain_db'
-
-API_KEY = 
+API_KEY = None
 DATA_PATH = 'data/txts/cleaned.txt'#This outside container
 
 @asynccontextmanager
@@ -32,5 +31,5 @@ app = FastAPI(lifespan=init_app)
 async def predict(question: str):
 
     global GRAPH
-    answer = GRAPH.invoke({'question':question})
+    answer = GRAPH.invoke({'question':question}) ['prev_answer']
     return {'response':answer}

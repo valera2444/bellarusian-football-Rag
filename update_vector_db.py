@@ -2,7 +2,8 @@ from langgraph_builder import build_dense_retriver
 
 from langchain_core.documents import Document
 
-def update(data_path, dense_vectors_storage_path):
+dense_vectors_storage_path = './chroma_langchain_db'
+def update(data_path):
     """Function for updating ChromaDB when new data come
 
     Args:
