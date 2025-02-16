@@ -175,8 +175,13 @@ def build_dense_retriver(documents, k = 7, refresh = False):
     )
     ids = [doc.id for doc in documents]
 
+    
+    chunck_size = 5000
+    chunk_num = len(ids) // chunck_size + 1
     if refresh:
-        vector_store.add_documents(documents=documents[:5000], ids=ids[:5000]) #CPU - >1.5 hours, GPU - 15min
+        for i in range(chunk_num):
+            vector_store.add_documents(documents=documents[i * chunck_size: (i+1)*chunck_size ], ids=ids[i * chunck_size: (i+1)*chunck_size ]) #CPU - >1.5 hours, GPU - 15min
+            print(f"chunck number {i} loaded")
         #vector_store.add_documents(documents=[Document("Hello world")]*3, ids=uuids[:3]) #CPU - >1.5 hours, GPU - 15min
         
     dense_retriver = vector_store.as_retriever(search_kwargs={"k": k})
