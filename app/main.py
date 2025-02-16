@@ -3,22 +3,27 @@ from contextlib import asynccontextmanager
 
 from langgraph_builder import compile_graph, init_langsmith
 
+from dotenv import load_dotenv
+load_dotenv() 
 
+import os
+
+from update_vector_db import update as update_vdb
 
 # Global variable to store the compiled graph
 GRAPH = None 
 
-DENSE_VECTOR_STORAGE_PATH = './chroma_langchain_db'
-API_KEY = None
-DATA_PATH = 'data/txts/cleaned.txt'#This outside container
+API_KEY = os.environ["LANGCHAIN_API_KEY"]
+
+DATA_PATH = '/data/cleaned.txt'
 
 @asynccontextmanager
 async def init_app(app: FastAPI):
     """Compiles the graph only once and reuses it."""
 
     global GRAPH
-
-    GRAPH = compile_graph(data_path = DATA_PATH, dense_vectors_storage_path =  DENSE_VECTOR_STORAGE_PATH)
+    update_vdb(DATA_PATH)
+    GRAPH = compile_graph(data_path = DATA_PATH)
     init_langsmith(api_key = API_KEY)
     yield
     del GRAPH
@@ -26,6 +31,10 @@ async def init_app(app: FastAPI):
 
 app = FastAPI(lifespan=init_app)
 
+@app.get("/update_vdb")
+async def update_vector_DB():
+    
+    update_vdb(DATA_PATH)
 
 @app.get("/predict")
 async def predict(question: str):
@@ -33,3 +42,4 @@ async def predict(question: str):
     global GRAPH
     answer = GRAPH.invoke({'question':question}) ['prev_answer']
     return {'response':answer}
+

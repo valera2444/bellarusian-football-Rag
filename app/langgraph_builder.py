@@ -4,12 +4,14 @@ from uuid import uuid4
 from langchain_core.documents import Document
 from langgraph.graph import START, StateGraph, END
 from typing import List, Dict, Literal, TypedDict
-from langchain_chroma import Chroma
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_ollama.llms import OllamaLLM
 from langchain_community.retrievers import BM25Retriever
 
 import os
+
+from langchain_postgres import PGVector
+from langchain_postgres.vectorstores import PGVector
 
 
 class State(TypedDict):
@@ -135,7 +137,7 @@ def build_sparse_rertiver(documents, k = 7):
     bm_25_retriever = BM25Retriever.from_documents(documents, k=k)
     return bm_25_retriever
 
-def build_dense_retriver(documents, k = 7, refresh = False, storage_path = None):
+def build_dense_retriver(documents, k = 7, refresh = False):
     """_summary_
 
     Args:
@@ -152,19 +154,38 @@ def build_dense_retriver(documents, k = 7, refresh = False, storage_path = None)
         model_name="sentence-transformers/all-mpnet-base-v2", model_kwargs={'device': device}, encode_kwargs={'normalize_embeddings': False}
     )
 
-    vector_store = Chroma(collection_name="belfoot_collection", embedding_function=hf_embeddings, persist_directory=storage_path)
+    #vector_store = Chroma(collection_name="belfoot_collection", embedding_function=hf_embeddings, persist_directory=storage_path)
     
-    uuids = [str(uuid4()) for _ in range(len(documents))]
+    # See docker command above to launch a postgres instance with pgvector enabled.
+
+
+    PGvector_username = os.environ["POSTGRES_USER"]
+    PGvector_password  = os.environ["POSTGRES_PASSWORD"]
+    PGvector_db = os.environ["POSTGRES_DB"]
+
+    connection = f"postgresql+psycopg://{PGvector_username}:{PGvector_password}@db:5432/{PGvector_db}"  # Uses psycopg3!
+    collection_name = "my_docs"
+
+    os.environ["PGVECTOR_VECTOR_SIZE"] = str(768)
+
+    vector_store = PGVector(
+        embeddings=hf_embeddings,
+        collection_name=collection_name,
+        connection=connection,
+        use_jsonb=True,
+    )
+    ids = [doc.id for doc in documents]
 
     if refresh:
-        vector_store.add_documents(documents=documents, ids=uuids) #CPU - >1.5 hours, GPU - 15min
-
+        vector_store.add_documents(documents=documents[:50], ids=ids[:50]) #CPU - >1.5 hours, GPU - 15min
+        #vector_store.add_documents(documents=[Document("Hello world")]*3, ids=uuids[:3]) #CPU - >1.5 hours, GPU - 15min
+        
     dense_retriver = vector_store.as_retriever(search_kwargs={"k": k})
 
     return dense_retriver
 
 
-def compile_graph(data_path, dense_vectors_storage_path):
+def compile_graph(data_path):
     
     k_dense = 5
     k_sparse = 5
@@ -174,9 +195,9 @@ def compile_graph(data_path, dense_vectors_storage_path):
 
     documents = [Document(page_content=text, id=idx) for idx, text in enumerate(lines)]
     
-    model = OllamaLLM(model="gemma2:2b")
+    model = OllamaLLM(model="gemma2:2b", base_url="http://ollama:11434")
 
-    dense_retriver = build_dense_retriver(documents,storage_path=dense_vectors_storage_path, k=k_dense, refresh = False)
+    dense_retriver = build_dense_retriver(documents, k=k_dense, refresh = False)
     sparse_retriver = build_sparse_rertiver(documents,k=k_sparse)
     
     

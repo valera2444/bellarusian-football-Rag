@@ -2,7 +2,8 @@ from langgraph_builder import build_dense_retriver
 
 from langchain_core.documents import Document
 
-dense_vectors_storage_path = './chroma_langchain_db'
+import os
+
 def update(data_path):
     """Function for updating ChromaDB when new data come
 
@@ -11,11 +12,11 @@ def update(data_path):
         dense_vectors_storage_path (str): path for vctor storage
     """
 
-    k_dense = 2
+    k_dense = 5
     
     with open(data_path, 'r', encoding="utf-8") as f:
         lines = f.readlines()
 
     documents = [Document(page_content=text, id=idx) for idx, text in enumerate(lines)]
 
-    build_dense_retriver(documents,storage_path=dense_vectors_storage_path, k=k_dense, refresh = True)
+    build_dense_retriver(documents, k=k_dense, refresh = True)
